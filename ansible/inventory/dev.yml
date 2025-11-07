@@ -1,0 +1,9 @@
+# Development Environment Inventory
+[development]
+localhost ansible_connection=local
+
+[development:vars]
+environment=development
+docker_compose_project=research-journal-dev
+app_port=8080
+frontend_port=3000

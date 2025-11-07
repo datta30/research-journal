@@ -1,0 +1,87 @@
+name: Deploy to Kubernetes
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+      deployment_method:
+        description: 'Deployment method'
+        required: true
+        type: choice
+        options:
+          - kubectl
+          - helm
+
+jobs:
+  deploy:
+    name: Deploy to Kubernetes
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup kubectl
+      uses: azure/setup-kubectl@v4
+      
+    - name: Setup Helm
+      if: inputs.deployment_method == 'helm'
+      uses: azure/setup-helm@v4
+      with:
+        version: 'v3.14.0'
+        
+    - name: Configure Kubernetes context
+      run: |
+        mkdir -p ~/.kube
+        echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
+        kubectl cluster-info
+        
+    - name: Create namespace
+      run: |
+        kubectl create namespace research-journal-${{ inputs.environment }} --dry-run=client -o yaml | kubectl apply -f -
+        
+    - name: Create secrets
+      run: |
+        kubectl create secret generic mysql-secret \
+          --from-literal=root-password=${{ secrets.MYSQL_ROOT_PASSWORD }} \
+          --namespace=research-journal-${{ inputs.environment }} \
+          --dry-run=client -o yaml | kubectl apply -f -
+          
+    - name: Deploy with kubectl
+      if: inputs.deployment_method == 'kubectl'
+      run: |
+        kubectl apply -f kubernetes/ --namespace=research-journal-${{ inputs.environment }}
+        
+    - name: Deploy with Helm
+      if: inputs.deployment_method == 'helm'
+      run: |
+        helm upgrade --install research-journal ./helm-chart/research-journal \
+          --namespace=research-journal-${{ inputs.environment }} \
+          --values=./helm-chart/research-journal/values-${{ inputs.environment }}.yaml \
+          --wait \
+          --timeout=5m
+          
+    - name: Verify deployment
+      run: |
+        kubectl rollout status deployment/frontend --namespace=research-journal-${{ inputs.environment }} --timeout=5m
+        kubectl rollout status deployment/backend --namespace=research-journal-${{ inputs.environment }} --timeout=5m
+        kubectl get all --namespace=research-journal-${{ inputs.environment }}
+        
+    - name: Run smoke tests
+      run: |
+        # Get service endpoint
+        FRONTEND_IP=$(kubectl get svc frontend-service -n research-journal-${{ inputs.environment }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+        if [ -z "$FRONTEND_IP" ]; then
+          FRONTEND_IP=$(kubectl get svc frontend-service -n research-journal-${{ inputs.environment }} -o jsonpath='{.spec.clusterIP}')
+        fi
+        
+        echo "Testing frontend at $FRONTEND_IP"
+        kubectl run curl-test --image=curlimages/curl:latest --rm -i --restart=Never --namespace=research-journal-${{ inputs.environment }} -- curl -f http://frontend-service || exit 1

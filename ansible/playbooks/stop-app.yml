@@ -1,0 +1,25 @@
+---
+# Stop Application
+
+- name: Stop Research Journal Application
+  hosts: all
+  become: yes
+  
+  vars:
+    app_dir: /opt/research-journal
+  
+  tasks:
+    - name: Stop all containers
+      command: docker-compose down
+      args:
+        chdir: "{{ app_dir }}"
+    
+    - name: Verify containers are stopped
+      command: docker-compose ps
+      args:
+        chdir: "{{ app_dir }}"
+      register: container_status
+    
+    - name: Display status
+      debug:
+        msg: "Containers stopped successfully"

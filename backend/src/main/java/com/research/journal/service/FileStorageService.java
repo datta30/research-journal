@@ -1,0 +1,60 @@
+package com.research.journal.service;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.UUID;
+
+@Service
+public class FileStorageService {
+    
+    @Value("${file.upload-dir}")
+    private String uploadDir;
+    
+    public String storeFile(MultipartFile file) {
+        try {
+            // Create upload directory if it doesn't exist
+            Path uploadPath = Paths.get(uploadDir);
+            if (!Files.exists(uploadPath)) {
+                Files.createDirectories(uploadPath);
+            }
+            
+            // Generate unique filename
+            String originalFileName = StringUtils.cleanPath(file.getOriginalFilename());
+            String fileExtension = "";
+            if (originalFileName.contains(".")) {
+                fileExtension = originalFileName.substring(originalFileName.lastIndexOf("."));
+            }
+            
+            String uniqueFileName = UUID.randomUUID().toString() + fileExtension;
+            Path targetLocation = uploadPath.resolve(uniqueFileName);
+            
+            // Copy file to target location
+            Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
+            
+            return uniqueFileName;
+        } catch (IOException ex) {
+            throw new RuntimeException("Could not store file. Please try again!", ex);
+        }
+    }
+    
+    public Path loadFile(String fileName) {
+        return Paths.get(uploadDir).resolve(fileName).normalize();
+    }
+    
+    public void deleteFile(String fileName) {
+        try {
+            Path filePath = loadFile(fileName);
+            Files.deleteIfExists(filePath);
+        } catch (IOException ex) {
+            throw new RuntimeException("Could not delete file: " + fileName, ex);
+        }
+    }
+}

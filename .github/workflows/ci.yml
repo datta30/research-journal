@@ -1,0 +1,174 @@
+name: CI/CD - Build and Test
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+
+jobs:
+  # Build and test frontend
+  frontend:
+    name: Frontend Build & Test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+        
+    - name: Install dependencies
+      working-directory: ./frontend
+      run: npm ci
+      
+    - name: Build frontend
+      working-directory: ./frontend
+      run: npm run build
+      
+    - name: Run tests
+      working-directory: ./frontend
+      run: npm test -- --passWithNoTests
+      
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: frontend-build
+        path: frontend/dist/
+        retention-days: 7
+
+  # Build and test backend
+  backend:
+    name: Backend Build & Test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+        cache: 'maven'
+        
+    - name: Build with Maven
+      working-directory: ./backend
+      run: mvn clean install -DskipTests
+      
+    - name: Run tests
+      working-directory: ./backend
+      run: mvn test
+      
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: backend-jar
+        path: backend/target/*.jar
+        retention-days: 7
+
+  # Validate Docker builds
+  docker:
+    name: Docker Build Validation
+    runs-on: ubuntu-latest
+    needs: [frontend, backend]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Build frontend Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./frontend
+        push: false
+        tags: cicd3-frontend:test
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        
+    - name: Build backend Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./backend
+        push: false
+        tags: cicd3-backend:test
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  # Validate Kubernetes manifests
+  kubernetes-validate:
+    name: Validate Kubernetes Manifests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup kubectl
+      uses: azure/setup-kubectl@v4
+      
+    - name: Validate Kubernetes YAML
+      run: |
+        for file in kubernetes/*.yaml; do
+          echo "Validating $file..."
+          kubectl apply --dry-run=client -f "$file" || exit 1
+        done
+        
+  # Validate Helm charts
+  helm-validate:
+    name: Validate Helm Charts
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Helm
+      uses: azure/setup-helm@v4
+      with:
+        version: 'v3.14.0'
+        
+    - name: Lint Helm chart
+      run: |
+        helm lint ./helm-chart/research-journal
+        
+    - name: Template Helm chart
+      run: |
+        helm template test ./helm-chart/research-journal
+        helm template test ./helm-chart/research-journal -f ./helm-chart/research-journal/values-dev.yaml
+        helm template test ./helm-chart/research-journal -f ./helm-chart/research-journal/values-prod.yaml
+
+  # Validate Ansible playbooks
+  ansible-validate:
+    name: Validate Ansible Playbooks
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        
+    - name: Install Ansible
+      run: |
+        pip install ansible
+        
+    - name: Syntax check playbooks
+      run: |
+        cd ansible
+        for playbook in playbooks/*.yml; do
+          echo "Checking $playbook..."
+          ansible-playbook --syntax-check "$playbook"
+        done

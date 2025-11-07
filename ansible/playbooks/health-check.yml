@@ -1,0 +1,60 @@
+---
+# Health Check Playbook
+
+- name: Check Application Health
+  hosts: all
+  become: yes
+  
+  vars:
+    app_dir: /opt/research-journal
+  
+  tasks:
+    - name: Check Docker service status
+      systemd:
+        name: docker
+      register: docker_status
+    
+    - name: Display Docker status
+      debug:
+        msg: "Docker service is {{ docker_status.status.ActiveState }}"
+    
+    - name: Check container status
+      command: docker-compose ps
+      args:
+        chdir: "{{ app_dir }}"
+      register: containers
+      ignore_errors: yes
+    
+    - name: Display container status
+      debug:
+        msg: "{{ containers.stdout_lines }}"
+    
+    - name: Check backend health
+      uri:
+        url: http://localhost:8080/actuator/health
+        status_code: 200
+      register: backend_health
+      ignore_errors: yes
+    
+    - name: Display backend health
+      debug:
+        msg: "Backend health: {{ backend_health.status | default('UNREACHABLE') }}"
+    
+    - name: Check frontend
+      uri:
+        url: http://localhost:80
+        status_code: 200
+      register: frontend_health
+      ignore_errors: yes
+    
+    - name: Display frontend health
+      debug:
+        msg: "Frontend health: {{ frontend_health.status | default('UNREACHABLE') }}"
+    
+    - name: Check disk space
+      shell: df -h | grep -E '/$|/var'
+      register: disk_space
+    
+    - name: Display disk space
+      debug:
+        msg: "{{ disk_space.stdout_lines }}"

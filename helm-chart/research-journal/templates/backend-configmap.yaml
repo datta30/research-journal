@@ -1,0 +1,18 @@
+{{- if .Values.backend.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: backend
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    release: {{ .Release.Name }}
+data:
+  SPRING_DATASOURCE_URL: "jdbc:mysql://mysql-service:3306/{{ .Values.mysql.auth.database }}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+  SPRING_DATASOURCE_USERNAME: "root"
+  SPRING_JPA_HIBERNATE_DDL_AUTO: {{ .Values.backend.config.hibernateDdlAuto | quote }}
+  SPRING_JPA_SHOW_SQL: {{ .Values.backend.config.showSql | quote }}
+  JWT_EXPIRATION: {{ .Values.backend.config.jwtExpiration | quote }}
+  FILE_UPLOAD_DIR: {{ .Values.backend.config.uploadDir | quote }}
+{{- end }}

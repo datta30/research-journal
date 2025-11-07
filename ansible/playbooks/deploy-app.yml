@@ -1,0 +1,83 @@
+---
+# Deploy Research Journal Application
+
+- name: Deploy Research Journal Application
+  hosts: all
+  become: yes
+  
+  vars:
+    app_dir: /opt/research-journal
+    repo_url: https://github.com/YOUR_USERNAME/research-journal.git
+  
+  tasks:
+    - name: Create application directory
+      file:
+        path: "{{ app_dir }}"
+        state: directory
+        mode: '0755'
+    
+    - name: Install Git
+      apt:
+        name: git
+        state: present
+      when: ansible_os_family == "Debian"
+    
+    - name: Clone application repository
+      git:
+        repo: "{{ repo_url }}"
+        dest: "{{ app_dir }}"
+        version: main
+        force: yes
+      ignore_errors: yes  # In case repo doesn't exist
+    
+    - name: Copy docker-compose file
+      copy:
+        src: ../../docker-compose.yml
+        dest: "{{ app_dir }}/docker-compose.yml"
+        mode: '0644'
+    
+    - name: Copy backend Dockerfile
+      copy:
+        src: ../../backend/Dockerfile
+        dest: "{{ app_dir }}/backend/Dockerfile"
+        mode: '0644'
+    
+    - name: Copy frontend Dockerfile
+      copy:
+        src: ../../frontend/Dockerfile
+        dest: "{{ app_dir }}/frontend/Dockerfile"
+        mode: '0644'
+    
+    - name: Stop existing containers
+      command: docker-compose down
+      args:
+        chdir: "{{ app_dir }}"
+      ignore_errors: yes
+    
+    - name: Pull latest images
+      command: docker-compose pull
+      args:
+        chdir: "{{ app_dir }}"
+      ignore_errors: yes
+    
+    - name: Build and start containers
+      command: docker-compose up -d --build
+      args:
+        chdir: "{{ app_dir }}"
+    
+    - name: Wait for application to be ready
+      wait_for:
+        host: localhost
+        port: 8080
+        delay: 10
+        timeout: 300
+    
+    - name: Check container status
+      command: docker-compose ps
+      args:
+        chdir: "{{ app_dir }}"
+      register: container_status
+    
+    - name: Display container status
+      debug:
+        msg: "{{ container_status.stdout_lines }}"

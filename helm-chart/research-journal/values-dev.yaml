@@ -1,0 +1,46 @@
+# Development Environment Overrides
+namespace: research-journal-dev
+
+mysql:
+  auth:
+    rootPassword: devroot
+    database: research_journal_dev
+  persistence:
+    size: 2Gi
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 100m
+    limits:
+      memory: 512Mi
+      cpu: 250m
+
+backend:
+  replicaCount: 1
+  config:
+    showSql: true
+    hibernateDdlAuto: create-drop
+  persistence:
+    size: 1Gi
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 100m
+    limits:
+      memory: 512Mi
+      cpu: 500m
+
+frontend:
+  replicaCount: 1
+  service:
+    type: NodePort
+  resources:
+    requests:
+      memory: 32Mi
+      cpu: 25m
+    limits:
+      memory: 64Mi
+      cpu: 50m
+
+ingress:
+  enabled: false

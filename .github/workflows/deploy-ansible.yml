@@ -1,0 +1,66 @@
+name: Deploy with Ansible
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+      action:
+        description: 'Action to perform'
+        required: true
+        type: choice
+        options:
+          - setup-docker
+          - deploy-app
+          - update-app
+          - backup-database
+          - health-check
+          - stop-app
+
+jobs:
+  ansible:
+    name: Run Ansible Playbook
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        
+    - name: Install Ansible
+      run: |
+        pip install ansible
+        ansible --version
+        
+    - name: Setup SSH key
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
+        
+    - name: Run Ansible playbook
+      working-directory: ./ansible
+      run: |
+        ansible-playbook \
+          -i inventory/${{ inputs.environment }}.yml \
+          playbooks/${{ inputs.action }}.yml \
+          --extra-vars "ansible_user=${{ secrets.SSH_USER }}"
+          
+    - name: Upload playbook logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: ansible-logs-${{ inputs.environment }}-${{ inputs.action }}
+        path: ansible/*.log
+        retention-days: 30

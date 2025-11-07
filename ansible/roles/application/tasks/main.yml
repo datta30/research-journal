@@ -1,0 +1,23 @@
+# Application Role Tasks
+
+---
+- name: Create application directory
+  file:
+    path: "{{ app_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: Copy application files
+  synchronize:
+    src: ../../../
+    dest: "{{ app_dir }}"
+    delete: yes
+    rsync_opts:
+      - "--exclude=.git"
+      - "--exclude=node_modules"
+      - "--exclude=target"
+
+- name: Deploy application
+  command: docker-compose up -d
+  args:
+    chdir: "{{ app_dir }}"

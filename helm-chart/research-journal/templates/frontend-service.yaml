@@ -1,0 +1,20 @@
+{{- if .Values.frontend.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: frontend
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    release: {{ .Release.Name }}
+spec:
+  selector:
+    app: frontend
+    release: {{ .Release.Name }}
+  ports:
+  - port: {{ .Values.frontend.service.port }}
+    targetPort: 80
+    protocol: TCP
+  type: {{ .Values.frontend.service.type }}
+{{- end }}

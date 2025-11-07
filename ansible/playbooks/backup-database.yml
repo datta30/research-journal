@@ -1,0 +1,62 @@
+---
+# Backup MySQL Database
+
+- name: Backup MySQL Database
+  hosts: all
+  become: yes
+  
+  vars:
+    app_dir: /opt/research-journal
+    backup_dir: /opt/backups
+    backup_filename: "research_journal_{{ ansible_date_time.date }}_{{ ansible_date_time.time | replace(':', '-') }}.sql"
+  
+  tasks:
+    - name: Create backup directory
+      file:
+        path: "{{ backup_dir }}"
+        state: directory
+        mode: '0755'
+    
+    - name: Get MySQL container ID
+      command: docker-compose ps -q mysql
+      args:
+        chdir: "{{ app_dir }}"
+      register: mysql_container
+    
+    - name: Backup MySQL database
+      command: >
+        docker exec {{ mysql_container.stdout }}
+        mysqldump -u root -proot research_journal_db
+      args:
+        chdir: "{{ app_dir }}"
+      register: mysql_dump
+    
+    - name: Save backup to file
+      copy:
+        content: "{{ mysql_dump.stdout }}"
+        dest: "{{ backup_dir }}/{{ backup_filename }}"
+        mode: '0600'
+    
+    - name: Compress backup
+      archive:
+        path: "{{ backup_dir }}/{{ backup_filename }}"
+        dest: "{{ backup_dir }}/{{ backup_filename }}.gz"
+        format: gz
+        remove: yes
+    
+    - name: Display backup location
+      debug:
+        msg: "Database backup saved to: {{ backup_dir }}/{{ backup_filename }}.gz"
+    
+    - name: Clean old backups (keep last 7 days)
+      find:
+        paths: "{{ backup_dir }}"
+        patterns: "*.sql.gz"
+        age: 7d
+      register: old_backups
+    
+    - name: Remove old backups
+      file:
+        path: "{{ item.path }}"
+        state: absent
+      with_items: "{{ old_backups.files }}"

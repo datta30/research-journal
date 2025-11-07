@@ -1,0 +1,16 @@
+---
+# Variables for all environments
+project_name: research-journal
+docker_compose_version: "3.8"
+
+# Default ports
+backend_port: 8080
+frontend_port: 80
+mysql_port: 3307
+
+# Application settings
+app_dir: /opt/research-journal
+backup_dir: /opt/backups
+
+# Docker settings
+docker_network: research-journal-network

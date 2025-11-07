@@ -1,0 +1,58 @@
+# Node/Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/.vite/
+frontend/package-lock.json
+*.log
+npm-debug.log*
+
+# Java/Backend
+backend/target/
+backend/.mvn/
+backend/mvnw
+backend/mvnw.cmd
+backend/.idea/
+backend/*.iml
+backend/.settings/
+backend/.classpath
+backend/.project
+*.class
+*.jar
+*.war
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Docker
+.docker/
+
+# Environment files (SECURITY: Don't commit secrets!)
+.env
+.env.local
+.env.*.local
+*.env
+
+# Kubernetes secrets (if you generate any)
+kubernetes/secrets-generated.yaml
+
+# Ansible
+ansible/*.retry
+ansible/.vault-password
+
+# Helm
+helm-chart/**/charts/
+helm-chart/**/*.tgz
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Logs
+logs/
+*.log

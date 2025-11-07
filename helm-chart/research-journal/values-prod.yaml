@@ -1,0 +1,51 @@
+# Production Environment Overrides
+namespace: research-journal-prod
+
+mysql:
+  auth:
+    rootPassword: CHANGE_ME_IN_PRODUCTION
+    database: research_journal_prod
+  persistence:
+    size: 20Gi
+    storageClass: fast-ssd
+  resources:
+    requests:
+      memory: 2Gi
+      cpu: 1000m
+    limits:
+      memory: 4Gi
+      cpu: 2000m
+
+backend:
+  replicaCount: 5
+  config:
+    showSql: false
+    hibernateDdlAuto: validate
+  persistence:
+    size: 10Gi
+    storageClass: fast-ssd
+  resources:
+    requests:
+      memory: 1Gi
+      cpu: 500m
+    limits:
+      memory: 2Gi
+      cpu: 2000m
+
+frontend:
+  replicaCount: 5
+  service:
+    type: LoadBalancer
+  resources:
+    requests:
+      memory: 128Mi
+      cpu: 100m
+    limits:
+      memory: 256Mi
+      cpu: 200m
+
+ingress:
+  enabled: true
+  host: research-journal.production.com
+  tls:
+    enabled: true

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear Storage</title>
+</head>
+<body>
+    <h1>Clear LocalStorage</h1>
+    <p>This will clear your stored login token and user data.</p>
+    <button onclick="clearStorage()">Clear Storage</button>
+    <div id="result"></div>
+    
+    <script>
+        function clearStorage() {
+            const token = localStorage.getItem('token');
+            const user = localStorage.getItem('user');
+            
+            document.getElementById('result').innerHTML = 
+                '<h3>Before:</h3>' +
+                '<pre>Token: ' + (token ? token.substring(0, 50) + '...' : 'none') + '</pre>' +
+                '<pre>User: ' + user + '</pre>';
+            
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            
+            document.getElementById('result').innerHTML += 
+                '<h3>After:</h3>' +
+                '<pre>Storage cleared!</pre>' +
+                '<p><a href="/">Go to login page</a></p>';
+        }
+    </script>
+</body>
+</html>

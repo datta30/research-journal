@@ -1,0 +1,19 @@
+---
+# Production-specific variables
+environment: production
+
+# Security settings
+mysql_root_password: "{{ vault_mysql_password }}"  # Use ansible-vault for production
+jwt_secret: "{{ vault_jwt_secret }}"  # Use ansible-vault for production
+
+# Resource settings
+frontend_replicas: 3
+backend_replicas: 2
+
+# Backup settings
+backup_retention_days: 30
+backup_schedule: "0 2 * * *"  # Daily at 2 AM
+
+# Monitoring
+enable_monitoring: yes
+alert_email: admin@research-journal.com

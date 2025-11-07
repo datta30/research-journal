@@ -1,0 +1,12 @@
+# Production Environment Inventory
+[production]
+prod-1 ansible_host=YOUR_SERVER_IP_1 ansible_user=YOUR_USER
+prod-2 ansible_host=YOUR_SERVER_IP_2 ansible_user=YOUR_USER
+prod-3 ansible_host=YOUR_SERVER_IP_3 ansible_user=YOUR_USER
+
+[production:vars]
+environment=production
+docker_compose_project=research-journal-prod
+app_port=80
+frontend_port=80
+mysql_root_password=CHANGE_ME_SECURE_PASSWORD

@@ -1,0 +1,53 @@
+---
+# Update Running Application
+
+- name: Update Research Journal Application
+  hosts: all
+  become: yes
+  
+  vars:
+    app_dir: /opt/research-journal
+  
+  tasks:
+    - name: Pull latest code changes
+      git:
+        repo: "{{ repo_url }}"
+        dest: "{{ app_dir }}"
+        version: main
+        force: yes
+      ignore_errors: yes
+    
+    - name: Stop containers
+      command: docker-compose down
+      args:
+        chdir: "{{ app_dir }}"
+    
+    - name: Remove old images
+      command: docker-compose down --rmi all
+      args:
+        chdir: "{{ app_dir }}"
+      ignore_errors: yes
+    
+    - name: Rebuild and start containers
+      command: docker-compose up -d --build
+      args:
+        chdir: "{{ app_dir }}"
+    
+    - name: Wait for application
+      wait_for:
+        host: localhost
+        port: 8080
+        delay: 10
+        timeout: 300
+    
+    - name: Verify deployment
+      uri:
+        url: http://localhost:8080/actuator/health
+        status_code: 200
+      register: health_check
+      retries: 5
+      delay: 10
+    
+    - name: Display health check result
+      debug:
+        msg: "Application is healthy: {{ health_check.status }}"
