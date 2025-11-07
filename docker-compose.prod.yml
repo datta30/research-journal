@@ -1,0 +1,86 @@
+# Production Docker Compose Configuration
+# This file uses images from GitHub Container Registry (GHCR)
+# To use this file: docker-compose -f docker-compose.prod.yml up -d
+# 
+# Note: Update GHCR_REGISTRY_USER environment variable or replace 
+# "datta30" with your GitHub username
+
+services:
+  # MySQL Database
+  mysql:
+    image: ghcr.io/${GHCR_REGISTRY_USER:-datta30}/research-journal-mysql:${IMAGE_TAG:-latest}
+    container_name: research-journal-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: research_journal_db
+      MYSQL_CHARACTER_SET_SERVER: utf8mb4
+      MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - research-journal-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-root}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Spring Boot Backend
+  backend:
+    image: ghcr.io/${GHCR_REGISTRY_USER:-datta30}/research-journal-backend:${IMAGE_TAG:-latest}
+    container_name: research-journal-backend
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/research_journal_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: "false"
+      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-this-in-production-min-256-bits-long-secret-key-for-jwt-tokens}
+      JWT_EXPIRATION: "86400000"
+      FILE_UPLOAD_DIR: /app/uploads
+    ports:
+      - "8080:8080"
+    volumes:
+      - backend_uploads:/app/uploads
+    networks:
+      - research-journal-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # React Frontend
+  frontend:
+    image: ghcr.io/${GHCR_REGISTRY_USER:-datta30}/research-journal-frontend:${IMAGE_TAG:-latest}
+    container_name: research-journal-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+    networks:
+      - research-journal-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  research-journal-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+    driver: local
+  backend_uploads:
+    driver: local

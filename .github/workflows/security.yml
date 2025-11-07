@@ -47,7 +47,7 @@ jobs:
     
     strategy:
       matrix:
-        service: [frontend, backend]
+        service: [frontend, backend, mysql]
         
     steps:
     - name: Checkout code
