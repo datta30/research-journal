@@ -103,6 +103,15 @@ jobs:
         tags: cicd3-backend:test
         cache-from: type=gha
         cache-to: type=gha,mode=max
+        
+    - name: Build MySQL Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./mysql
+        push: false
+        tags: cicd3-mysql:test
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
 
   # Validate Kubernetes manifests
   kubernetes-validate:

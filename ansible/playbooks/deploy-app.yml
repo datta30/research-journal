@@ -1,5 +1,5 @@
 ---
-# Deploy Research Journal Application
+# Deploy Research Journal Application using GHCR images
 
 - name: Deploy Research Journal Application
   hosts: all
@@ -7,7 +7,11 @@
   
   vars:
     app_dir: /opt/research-journal
-    repo_url: https://github.com/YOUR_USERNAME/research-journal.git
+    ghcr_registry: "{{ ghcr_registry | default('ghcr.io') }}"
+    ghcr_username: "{{ ghcr_username | default(lookup('env', 'GHCR_USERNAME')) }}"
+    ghcr_token: "{{ ghcr_token | default(lookup('env', 'GHCR_TOKEN')) }}"
+    image_tag: "{{ image_tag | default('latest') }}"
+    docker_compose_file: "{{ docker_compose_file | default('docker-compose.prod.yml') }}"
   
   tasks:
     - name: Create application directory
@@ -20,33 +24,27 @@
       apt:
         name: git
         state: present
+        update_cache: yes
       when: ansible_os_family == "Debian"
     
-    - name: Clone application repository
-      git:
-        repo: "{{ repo_url }}"
-        dest: "{{ app_dir }}"
-        version: main
-        force: yes
-      ignore_errors: yes  # In case repo doesn't exist
+    - name: Login to GitHub Container Registry
+      docker_login:
+        registry: "{{ ghcr_registry }}"
+        username: "{{ ghcr_username }}"
+        password: "{{ ghcr_token }}"
+        reauthorize: yes
     
-    - name: Copy docker-compose file
+    - name: Copy docker-compose production file
       copy:
-        src: ../../docker-compose.yml
+        src: "../../{{ docker_compose_file }}"
         dest: "{{ app_dir }}/docker-compose.yml"
         mode: '0644'
     
-    - name: Copy backend Dockerfile
-      copy:
-        src: ../../backend/Dockerfile
-        dest: "{{ app_dir }}/backend/Dockerfile"
-        mode: '0644'
-    
-    - name: Copy frontend Dockerfile
-      copy:
-        src: ../../frontend/Dockerfile
-        dest: "{{ app_dir }}/frontend/Dockerfile"
-        mode: '0644'
+    - name: Create .env file for docker-compose
+      template:
+        src: ../templates/docker.env.j2
+        dest: "{{ app_dir }}/.env"
+        mode: '0600'
     
     - name: Stop existing containers
       command: docker-compose down
@@ -54,23 +52,29 @@
         chdir: "{{ app_dir }}"
       ignore_errors: yes
     
-    - name: Pull latest images
+    - name: Pull latest images from GHCR
       command: docker-compose pull
       args:
         chdir: "{{ app_dir }}"
-      ignore_errors: yes
     
-    - name: Build and start containers
-      command: docker-compose up -d --build
+    - name: Start containers
+      command: docker-compose up -d
       args:
         chdir: "{{ app_dir }}"
     
-    - name: Wait for application to be ready
+    - name: Wait for backend to be ready
       wait_for:
         host: localhost
         port: 8080
         delay: 10
         timeout: 300
+    
+    - name: Wait for frontend to be ready
+      wait_for:
+        host: localhost
+        port: 80
+        delay: 5
+        timeout: 120
     
     - name: Check container status
       command: docker-compose ps
@@ -81,3 +85,16 @@
     - name: Display container status
       debug:
         msg: "{{ container_status.stdout_lines }}"
+    
+    - name: Verify backend health
+      uri:
+        url: "http://localhost:8080/actuator/health"
+        method: GET
+        status_code: 200
+      register: backend_health
+      retries: 5
+      delay: 10
+    
+    - name: Display backend health status
+      debug:
+        msg: "Backend is healthy: {{ backend_health.json }}"

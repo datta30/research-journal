@@ -21,7 +21,7 @@ jobs:
       
     strategy:
       matrix:
-        service: [frontend, backend]
+        service: [frontend, backend, mysql]
         
     steps:
     - name: Checkout code
@@ -51,6 +51,7 @@ jobs:
           type=raw,value=latest,enable={{is_default_branch}}
           
     - name: Build and push Docker image
+      id: build
       uses: docker/build-push-action@v5
       with:
         context: ./${{ matrix.service }}

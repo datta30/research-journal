@@ -1,0 +1,43 @@
+# AWS Development Environment Inventory
+
+all:
+  vars:
+    ansible_user: ubuntu
+    ansible_ssh_private_key_file: ~/.ssh/aws-research-journal-key.pem
+    ansible_python_interpreter: /usr/bin/python3
+    
+    # Environment
+    environment: dev
+    
+    # Application Configuration
+    app_name: research-journal
+    docker_compose_file: docker-compose.prod.yml
+    
+    # GHCR Configuration
+    ghcr_registry: ghcr.io
+    ghcr_username: "{{ lookup('env', 'GHCR_USERNAME') }}"
+    ghcr_token: "{{ lookup('env', 'GHCR_TOKEN') }}"
+    image_tag: latest
+    
+    # AWS Configuration
+    aws_region: us-east-1
+    vpc_cidr: 10.0.0.0/16
+    
+  children:
+    application_servers:
+      hosts:
+        app-dev-1:
+          ansible_host: # Will be populated after EC2 provisioning
+          private_ip: 10.0.1.10
+          
+    database_servers:
+      hosts:
+        db-dev-1:
+          ansible_host: # Will be populated after EC2 provisioning
+          private_ip: 10.0.2.10
+          mysql_root_password: "{{ lookup('env', 'MYSQL_ROOT_PASSWORD') }}"
+          
+    load_balancers:
+      hosts:
+        lb-dev-1:
+          ansible_host: # Will be populated after ALB provisioning
