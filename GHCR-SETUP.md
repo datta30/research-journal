@@ -6,9 +6,11 @@ This repository uses GitHub Container Registry (GHCR) to store and distribute Do
 
 The following images are automatically built and published by GitHub Actions:
 
-1. **Frontend**: `ghcr.io/datta30/research-journal-frontend:latest`
-2. **Backend**: `ghcr.io/datta30/research-journal-backend:latest`
-3. **MySQL**: `ghcr.io/datta30/research-journal-mysql:latest`
+1. **Frontend**: `ghcr.io/YOUR_GITHUB_USERNAME/research-journal-frontend:latest`
+2. **Backend**: `ghcr.io/YOUR_GITHUB_USERNAME/research-journal-backend:latest`
+3. **MySQL**: `ghcr.io/YOUR_GITHUB_USERNAME/research-journal-mysql:latest`
+
+Replace `YOUR_GITHUB_USERNAME` with your actual GitHub username or organization name.
 
 ## Image Tags
 
@@ -22,9 +24,9 @@ Images are tagged with the following patterns:
 
 ### Public Access (if repository is public)
 ```bash
-docker pull ghcr.io/datta30/research-journal-frontend:latest
-docker pull ghcr.io/datta30/research-journal-backend:latest
-docker pull ghcr.io/datta30/research-journal-mysql:latest
+docker pull ghcr.io/YOUR_GITHUB_USERNAME/research-journal-frontend:latest
+docker pull ghcr.io/YOUR_GITHUB_USERNAME/research-journal-backend:latest
+docker pull ghcr.io/YOUR_GITHUB_USERNAME/research-journal-mysql:latest
 ```
 
 ### Authenticated Access (for private repositories)
@@ -42,7 +44,7 @@ docker pull ghcr.io/datta30/research-journal-mysql:latest
 
 3. **Pull images**
    ```bash
-   docker pull ghcr.io/datta30/research-journal-frontend:latest
+   docker pull ghcr.io/YOUR_GITHUB_USERNAME/research-journal-frontend:latest
    ```
 
 ## Using with Docker Compose
@@ -73,14 +75,14 @@ If you need to manually build and push:
 echo $GHCR_TOKEN | docker login ghcr.io -u YOUR_GITHUB_USERNAME --password-stdin
 
 # Build and tag images
-docker build -t ghcr.io/datta30/research-journal-frontend:latest ./frontend
-docker build -t ghcr.io/datta30/research-journal-backend:latest ./backend
-docker build -t ghcr.io/datta30/research-journal-mysql:latest ./mysql
+docker build -t ghcr.io/YOUR_GITHUB_USERNAME/research-journal-frontend:latest ./frontend
+docker build -t ghcr.io/YOUR_GITHUB_USERNAME/research-journal-backend:latest ./backend
+docker build -t ghcr.io/YOUR_GITHUB_USERNAME/research-journal-mysql:latest ./mysql
 
 # Push images
-docker push ghcr.io/datta30/research-journal-frontend:latest
-docker push ghcr.io/datta30/research-journal-backend:latest
-docker push ghcr.io/datta30/research-journal-mysql:latest
+docker push ghcr.io/YOUR_GITHUB_USERNAME/research-journal-frontend:latest
+docker push ghcr.io/YOUR_GITHUB_USERNAME/research-journal-backend:latest
+docker push ghcr.io/YOUR_GITHUB_USERNAME/research-journal-mysql:latest
 ```
 
 ## Image Details
@@ -133,10 +135,10 @@ echo $GHCR_TOKEN | docker login ghcr.io -u YOUR_GITHUB_USERNAME --password-stdin
 ### Image Pull Errors
 ```bash
 # Check if image exists
-docker manifest inspect ghcr.io/datta30/research-journal-frontend:latest
+docker manifest inspect ghcr.io/YOUR_GITHUB_USERNAME/research-journal-frontend:latest
 
 # Try with explicit tag
-docker pull ghcr.io/datta30/research-journal-frontend:main
+docker pull ghcr.io/YOUR_GITHUB_USERNAME/research-journal-frontend:main
 ```
 
 ### Permission Issues

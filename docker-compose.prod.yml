@@ -1,11 +1,14 @@
 # Production Docker Compose Configuration
 # This file uses images from GitHub Container Registry (GHCR)
 # To use this file: docker-compose -f docker-compose.prod.yml up -d
+# 
+# Note: Update GHCR_REGISTRY_USER environment variable or replace 
+# "datta30" with your GitHub username
 
 services:
   # MySQL Database
   mysql:
-    image: ghcr.io/datta30/research-journal-mysql:latest
+    image: ghcr.io/${GHCR_REGISTRY_USER:-datta30}/research-journal-mysql:${IMAGE_TAG:-latest}
     container_name: research-journal-mysql
     restart: unless-stopped
     environment:
@@ -27,7 +30,7 @@ services:
 
   # Spring Boot Backend
   backend:
-    image: ghcr.io/datta30/research-journal-backend:latest
+    image: ghcr.io/${GHCR_REGISTRY_USER:-datta30}/research-journal-backend:${IMAGE_TAG:-latest}
     container_name: research-journal-backend
     restart: unless-stopped
     depends_on:
@@ -57,7 +60,7 @@ services:
 
   # React Frontend
   frontend:
-    image: ghcr.io/datta30/research-journal-frontend:latest
+    image: ghcr.io/${GHCR_REGISTRY_USER:-datta30}/research-journal-frontend:${IMAGE_TAG:-latest}
     container_name: research-journal-frontend
     restart: unless-stopped
     depends_on:

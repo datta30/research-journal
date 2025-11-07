@@ -12,5 +12,3 @@ COPY schema.sql /docker-entrypoint-initdb.d/01-schema.sql
 
 # Expose MySQL port
 EXPOSE 3306
-
-# Use the default MySQL entrypoint
