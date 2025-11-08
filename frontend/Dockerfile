@@ -8,6 +8,8 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
+# npm ci respects package-lock.json and is designed for CI/CD
+# By default in Docker, devDependencies are installed unless NODE_ENV=production
 RUN npm ci
 
 # Copy source code
