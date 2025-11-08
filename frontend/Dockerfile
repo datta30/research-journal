@@ -7,10 +7,9 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-# npm ci respects package-lock.json and is designed for CI/CD
-# By default in Docker, devDependencies are installed unless NODE_ENV=production
-RUN npm ci
+# Install dependencies including devDependencies (needed for build tools like vite)
+# Explicitly set NODE_ENV to ensure devDependencies are installed
+RUN NODE_ENV=development npm ci
 
 # Copy source code
 COPY . .
