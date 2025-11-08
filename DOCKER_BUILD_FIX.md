@@ -4,14 +4,14 @@
 Previously, only the MySQL container was successfully built and pushed to GitHub Container Registry. The frontend and backend containers failed to build.
 
 ## Root Cause
-The frontend Dockerfile had an issue with dependency installation. The `npm ci` command was not properly configured to install devDependencies (including `vite` which is required for building the frontend).
+The frontend Dockerfile had an issue with dependency installation. The `npm ci` command was not installing devDependencies (including `vite` which is required for building) because in CI/CD environments, `NODE_ENV` may be set to `production` by default, which causes `npm ci` to skip devDependencies.
 
 ## Changes Made
 
 ### Frontend Dockerfile (`frontend/Dockerfile`)
-- Simplified the Dockerfile to use `npm ci` properly
-- Removed unnecessary configurations that were preventing devDependencies from being installed
-- `npm ci` now correctly installs all dependencies including devDependencies by default in the build stage
+- **Key Fix**: Added `NODE_ENV=development` before the `npm ci` command
+- This explicitly ensures devDependencies are installed during the build stage
+- Without this, `npm ci` may skip devDependencies if `NODE_ENV=production` is set in the CI environment
 - The build stage uses Node.js 20 Alpine and the production stage uses Nginx Alpine
 
 ### Backend Dockerfile (`backend/Dockerfile`)  
@@ -98,17 +98,18 @@ After the workflow runs successfully:
 ## Technical Details
 
 ### Why the Frontend Build Failed Before
-- The issue was with how npm installs dependencies in Docker
-- When building in Docker, if NODE_ENV is not explicitly set, npm ci installs all dependencies including devDependencies
-- However, if there are network issues or timing problems, npm can fail silently
-- The previous configuration may have had environment settings that prevented devDependencies from being installed
+- The issue was with how npm installs dependencies in Docker/CI environments
+- In CI/CD environments, `NODE_ENV` is often set to `production` by default
+- When `NODE_ENV=production`, `npm ci` skips devDependencies to optimize for production deployments
+- However, the build stage requires devDependencies (specifically `vite`) to compile the application
 - Without `vite` (a devDependency), the `npm run build` command would fail with "vite: not found"
 
 ### Why It Works Now
-- Simplified Dockerfile that relies on npm ci's default behavior
-- In the build stage, devDependencies are always installed by default
+- Explicitly sets `NODE_ENV=development` when running `npm ci` in the build stage
+- This ensures all devDependencies are installed, regardless of the CI environment's defaults
+- The command is: `RUN NODE_ENV=development npm ci`
 - Clean multi-stage build separates build-time from runtime dependencies
-- Build stage has all tools needed (Node.js + dependencies)
+- Build stage has all tools needed (Node.js + all dependencies including dev tools)
 - Production stage only has the built assets (smaller, more secure)
 
 ## Network Issues in Local Environment
